@@ -4,6 +4,15 @@ import connectToMongoDB from "../utils/dbconnection";
 
 dotenv.configDotenv({ path: "./.env" });
 
+// uncaught execeptions all errors or bugs that occurs synchronous code that are not handle called uncaught execption.
+process.on("uncaughtException", (error: Error) => {
+  console.log(error);
+  console.log("uncaughtException!! app is shutting down...");
+  server.close(() => {
+    process.exit(1);
+  });
+});
+
 connectToMongoDB(process.env.MONGODB_CONNECTION as string);
 
 const port = process.env.PORT || 3000;
