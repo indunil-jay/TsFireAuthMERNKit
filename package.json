@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "start": "cross-env NODE_ENV=development nodemon ./api/src/index.ts",
-    "start::production": "set NODE_ENV=production && nodemon ./api/src/index.ts"
+    "start:production": "cross-env NODE_ENV=production nodemon ./api/src/index.ts"
   },
   "keywords": [],
   "author": "",

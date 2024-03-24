@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema<IUserDocument, IUserModel>(
       required: [true, "Please provide your email."],
       unique: true,
       lowercase: true,
-      validate: [validator.isEmail, "Please Provide a valid password"],
+      validate: [validator.isEmail, "Please Provide a valid email"],
     },
     password: {
       type: String,
