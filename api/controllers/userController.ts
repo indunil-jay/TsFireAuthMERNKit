@@ -8,7 +8,7 @@ export const getAllUsers = catchAsync(
     const users = await User.find();
 
     return res.status(200).json({
-      status: "sucess",
+      status: "success",
       length: users.length,
       data: {
         users,
@@ -24,7 +24,25 @@ export const getUser = catchAsync(
     if (!user) return next(new AppError("There is no user with that ID.", 404));
 
     return res.status(200).json({
-      status: "sucess",
+      status: "success",
+      data: {
+        user,
+      },
+    });
+  }
+);
+
+export const updateUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!user) return next(new AppError("There is no user with that ID.", 404));
+
+    return res.status(200).json({
+      status: "success",
       data: {
         user,
       },
