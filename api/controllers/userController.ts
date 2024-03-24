@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import User, { IUser, IUserDocument } from "../models/userModel";
+import User, { IUser } from "../models/userModel";
+import jwt from "jsonwebtoken";
 import AppError from "../utils/appError";
 
 export const signup = async (
@@ -27,7 +28,22 @@ export const signup = async (
     //3) remove password from output when sending response
     const { password: userPassword, ...userData } = user.toObject();
 
-    res.status(200).json({ status: "success", data: { user: userData } });
+    //4)create jwt token successfully created user.
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET as string, {
+      expiresIn: process.env.JWT_EXPIRE_TIME,
+    });
+    console.log(token);
+    // define cookie options
+    const cookieOptions = {
+      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      httpOnly: true,
+    };
+    // send via response, browser cookies
+    res.cookie("jwt", token, cookieOptions);
+
+    return res
+      .status(200)
+      .json({ status: "success", data: { user: userData } });
   } catch (error) {
     // If an error occurs, send error response
     if (error instanceof AppError) {
