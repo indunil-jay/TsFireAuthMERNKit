@@ -2,13 +2,10 @@ import { Request, Response, NextFunction } from "express";
 import User, { IUser } from "../models/userModel";
 import jwt from "jsonwebtoken";
 import AppError from "../utils/appError";
+import catchAsync from "../utils/catchAsync";
 
-export const signup = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
+export const signup = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
     const { name, email, password, passwordConfirm }: IUser = req.body;
 
     //1) check both passwords are same
@@ -32,7 +29,7 @@ export const signup = async (
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET as string, {
       expiresIn: process.env.JWT_EXPIRE_TIME,
     });
-    console.log(token);
+
     // define cookie options
     const cookieOptions = {
       expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -44,16 +41,5 @@ export const signup = async (
     return res
       .status(200)
       .json({ status: "success", data: { user: userData } });
-  } catch (error) {
-    // If an error occurs, send error response
-    if (error instanceof AppError) {
-      // Handle custom error with statusCode
-      res
-        .status(error.statusCode)
-        .json({ status: "fail", message: error.message });
-    } else {
-      // Handle other errors
-      res.status(500).json({ status: "error", message: error });
-    }
   }
-};
+);
