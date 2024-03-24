@@ -40,6 +40,6 @@ export const signup = catchAsync(
 
     return res
       .status(200)
-      .json({ status: "success", data: { user: userData } });
+      .json({ token, status: "success", data: { user: userData } });
   }
 );
