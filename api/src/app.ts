@@ -8,6 +8,7 @@ import cors from "cors";
 import morgon from "morgan";
 import userRouter from "../routes/userRouter";
 import AppError from "../utils/appError";
+import globalErrorHandler from "../controllers/errorController";
 
 const app = express();
 
@@ -38,14 +39,6 @@ app.all("*", (req: Request, res: Response, next: NextFunction) => {
 });
 
 //global error handling middleware
-app.use((err: AppError, req: Request, res: Response, next: NextFunction) => {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || "error";
-
-  res.status(err.statusCode).json({
-    status: err.status,
-    message: err.message,
-  });
-});
+app.use(globalErrorHandler);
 
 export default app;
