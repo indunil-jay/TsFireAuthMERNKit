@@ -43,9 +43,24 @@ export const updateUser = catchAsync(
 
     return res.status(200).json({
       status: "success",
+      message: "user update successfully",
       data: {
         user,
       },
+    });
+  }
+);
+
+export const deleteUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const user = await User.findByIdAndDelete(req.params.id);
+
+    if (!user) return next(new AppError("There is no user with that ID.", 404));
+
+    return res.status(200).json({
+      status: "success",
+      message: "user delete succefully.",
+      data: null,
     });
   }
 );
