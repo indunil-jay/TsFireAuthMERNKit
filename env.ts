@@ -4,7 +4,7 @@ declare global {
       MONGODB_CONNECTION: string;
       MONGODB_PASSWOR: string;
       MONGODB_USER: string;
-      PORT: number;
+      PORT: string;
       JWT_SECRET: string;
       JWT_EXPIRE_TIME: string;
       JWT_COOKIE_EXPIRES_IN: string;

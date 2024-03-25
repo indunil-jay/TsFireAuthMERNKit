@@ -13,6 +13,11 @@ export interface IUser {
 
 //define user document shape
 export interface IUserDocument extends Document, IUser {
+  correctPassword(
+    inputPassword: string,
+    userPassword: string
+  ): Promise<boolean>;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,7 +66,7 @@ const userSchema = new mongoose.Schema<IUserDocument, IUserModel>(
 );
 
 userSchema.pre("save", async function (this: IUserDocument, next) {
-  //if password is modified then return;
+  //if the passowrd  is has not been modify;
   if (!this.isModified("password")) return next();
 
   //encryptpassword when create new user
@@ -72,6 +77,14 @@ userSchema.pre("save", async function (this: IUserDocument, next) {
 
   next();
 });
+
+//instance method in docs
+userSchema.methods.correctPassword = async function (
+  inputPassword: string,
+  userPassword: string
+) {
+  return await bcryptjs.compare(inputPassword, userPassword);
+};
 
 const User: Model<IUserDocument> = mongoose.model<IUserDocument, IUserModel>(
   "User",

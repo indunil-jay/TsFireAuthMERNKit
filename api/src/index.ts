@@ -15,7 +15,7 @@ process.on("uncaughtException", (error: Error) => {
 
 connectToMongoDB(process.env.MONGODB_CONNECTION as string);
 
-const port = process.env.PORT || 3000;
+const port = Number(process.env.PORT) || 3000;
 const server = app.listen(port, () =>
   console.log(`app running on port ${port}...`)
 );
