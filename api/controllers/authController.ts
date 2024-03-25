@@ -1,10 +1,17 @@
 import { Request, Response, NextFunction } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken";
+import jwt, { Jwt, JwtPayload } from "jsonwebtoken";
 import { ObjectId } from "mongodb";
 import { promisify } from "util";
 import catchAsync from "../utils/catchAsync";
 import AppError from "../utils/appError";
-import User, { IUser } from "../models/userModel";
+import User, { IUser, IUserDocument } from "../models/userModel";
+
+//Note
+declare module "express" {
+  interface Request {
+    user?: IUserDocument;
+  }
+}
 
 const signToken = (id: ObjectId) =>
   jwt.sign({ id }, process.env.JWT_SECRET as string, {
@@ -13,7 +20,14 @@ const signToken = (id: ObjectId) =>
 
 export const signup = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, email, password, passwordConfirm, photo }: IUser = req.body;
+    const {
+      name,
+      email,
+      password,
+      passwordConfirm,
+      photo,
+      passwordChangedAt,
+    }: IUser = req.body;
 
     //1) check both passwords are same
     // if (password !== passwordConfirm) {
@@ -28,6 +42,7 @@ export const signup = catchAsync(
       password,
       passwordConfirm,
       photo,
+      passwordChangedAt,
     });
 
     //3) remove password from output when sending response
@@ -115,17 +130,42 @@ export const protect = catchAsync(
     };
     const verifyAsync = promisify(verifyToken);
 
+    let decoded: string | Jwt | JwtPayload | undefined;
     try {
-      const decoded = await verifyAsync(
-        token,
-        process.env.JWT_SECRET as string
-      );
+      decoded = await verifyAsync(token, process.env.JWT_SECRET as string);
+      if (!decoded) {
+        throw new Error("Unable to decode JWT");
+      }
     } catch (error) {
       throw error;
     }
-    //3)Check if user still exists
+
+    //3)Check if user stilexists.
+
+    let currentUser: IUserDocument | null = null;
+
+    // Ensure 'decoded' is JwtPayload
+    if (decoded && typeof decoded === "object" && "id" in decoded) {
+      currentUser = await User.findById(decoded.id);
+    }
+
+    if (!currentUser)
+      return next(
+        new AppError(`The user belongs to that token does not exits.`, 401)
+      );
 
     //4) check if user changed password after th jwt token was issured
+    if (decoded && typeof decoded === "object" && "iat" in decoded) {
+      const isChanged = await currentUser.changedPasswordAfter(
+        decoded.iat as number
+      );
+      console.log(isChanged);
+      if (isChanged) {
+        return next(new AppError("User recently changed password.", 401));
+      }
+    }
+    req.user = currentUser;
+    //Grand access to protected routes
     next();
   }
 );

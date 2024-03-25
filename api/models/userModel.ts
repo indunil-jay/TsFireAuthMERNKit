@@ -9,6 +9,7 @@ export interface IUser {
   password: string;
   passwordConfirm: string | undefined;
   photo?: string;
+  passwordChangedAt?: Date;
 }
 
 //define user document shape
@@ -18,6 +19,7 @@ export interface IUserDocument extends Document, IUser {
     userPassword: string
   ): Promise<boolean>;
 
+  changedPasswordAfter(JWTTimestamp: number): Promise<boolean>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -61,6 +63,7 @@ const userSchema = new mongoose.Schema<IUserDocument, IUserModel>(
       default:
         "https://media.istockphoto.com/id/1495088043/vector/user-profile-icon-avatar-or-person-icon-profile-picture-portrait-symbol-default-portrait.jpg?s=1024x1024&w=is&k=20&c=oGqYHhfkz_ifeE6-dID6aM7bLz38C6vQTy1YcbgZfx8=",
     },
+    passwordChangedAt: Date,
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
@@ -78,12 +81,29 @@ userSchema.pre("save", async function (this: IUserDocument, next) {
   next();
 });
 
-//instance method in docs
+//instance method in docs for compare passwords
 userSchema.methods.correctPassword = async function (
   inputPassword: string,
   userPassword: string
 ) {
   return await bcryptjs.compare(inputPassword, userPassword);
+};
+
+//check password is changed after jwt token is issued.
+userSchema.methods.changedPasswordAfter = function (
+  this: IUserDocument,
+  JWTTimestamp: number
+) {
+  if (this.passwordChangedAt) {
+    const changedTimeStamp = Math.trunc(
+      (this.passwordChangedAt as Date).getTime() / 1000
+    );
+    console.log(JWTTimestamp, changedTimeStamp);
+    return JWTTimestamp < changedTimeStamp; //100 <200 true
+  }
+
+  //false means not changed
+  return false;
 };
 
 const User: Model<IUserDocument> = mongoose.model<IUserDocument, IUserModel>(
