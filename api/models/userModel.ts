@@ -8,6 +8,7 @@ export interface IUser {
   email: string;
   password: string;
   passwordConfirm: string | undefined;
+  photo?: string;
 }
 
 //define user document shape
@@ -49,6 +50,11 @@ const userSchema = new mongoose.Schema<IUserDocument, IUserModel>(
       //   },
       //   message: "passwords are not matching. Please enter matching password.",
       // },
+    },
+    photo: {
+      type: String,
+      default:
+        "https://media.istockphoto.com/id/1495088043/vector/user-profile-icon-avatar-or-person-icon-profile-picture-portrait-symbol-default-portrait.jpg?s=1024x1024&w=is&k=20&c=oGqYHhfkz_ifeE6-dID6aM7bLz38C6vQTy1YcbgZfx8=",
     },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }

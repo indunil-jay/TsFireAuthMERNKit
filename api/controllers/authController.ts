@@ -6,7 +6,7 @@ import catchAsync from "../utils/catchAsync";
 
 export const signup = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { name, email, password, passwordConfirm }: IUser = req.body;
+    const { name, email, password, passwordConfirm, photo }: IUser = req.body;
 
     //1) check both passwords are same
     if (password !== passwordConfirm) {
@@ -20,6 +20,7 @@ export const signup = catchAsync(
       email,
       password,
       passwordConfirm,
+      photo,
     });
 
     //3) remove password from output when sending response

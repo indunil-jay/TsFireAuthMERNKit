@@ -6,9 +6,15 @@ const router = express.Router();
 
 router.post("/signup", authController.signup);
 
-router.get("/", userController.getAllUsers);
-router.get("/:id", userController.getUser);
-router.patch("/:id", userController.updateUser);
-router.delete("/:id", userController.deleteUser);
+router
+  .route("/")
+  .get(userController.getAllUsers)
+  .post(userController.createUser);
+
+router
+  .route("/:id")
+  .get(userController.getUser)
+  .patch(userController.updateUser)
+  .delete(userController.deleteUser);
 
 export default router;
