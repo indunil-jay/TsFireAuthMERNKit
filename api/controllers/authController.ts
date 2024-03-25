@@ -89,14 +89,6 @@ export const singin = catchAsync(
     //3) if everythin is ok send token in to client
     const token = signToken(user._id);
 
-    // define cookie options
-    // const cookieOptions = {
-    //   expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    //   httpOnly: true,
-    // };
-    // // send via response, browser cookies
-    // res.cookie("jwt", token, cookieOptions);
-
     return res.status(200).json({ status: "success", token, user });
   }
 );
@@ -140,7 +132,7 @@ export const protect = catchAsync(
       throw error;
     }
 
-    //3)Check if user stilexists.
+    //3)Check if user stil exists.
 
     let currentUser: IUserDocument | null = null;
 
@@ -164,8 +156,20 @@ export const protect = catchAsync(
         return next(new AppError("User recently changed password.", 401));
       }
     }
-    req.user = currentUser;
+    req.user = currentUser as IUserDocument;
     //Grand access to protected routes
     next();
   }
 );
+
+export const restrictTo = (...roles: string[]) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    console.log("Role", req.user?.role);
+    if (!req.user || !roles.includes(req.user.role)) {
+      return next(
+        new AppError("You do not have permission to perform this action", 403)
+      );
+    }
+    next();
+  };
+};

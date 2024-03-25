@@ -6,6 +6,7 @@ import bcryptjs from "bcryptjs";
 export interface IUser {
   name: string;
   email: string;
+  role: string;
   password: string;
   passwordConfirm: string | undefined;
   photo?: string;
@@ -39,6 +40,11 @@ const userSchema = new mongoose.Schema<IUserDocument, IUserModel>(
       unique: true,
       lowercase: true,
       validate: [validator.isEmail, "Please Provide a valid email"],
+    },
+    role: {
+      type: String,
+      enum: ["user", "moderator", "admin"],
+      default: "user",
     },
     password: {
       type: String,

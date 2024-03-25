@@ -9,13 +9,17 @@ router.post("/signin", authController.singin);
 
 router
   .route("/")
-  .get(authController.protect, userController.getAllUsers)
+  .get(userController.getAllUsers)
   .post(userController.createUser);
 
 router
   .route("/:id")
   .get(userController.getUser)
   .patch(userController.updateUser)
-  .delete(userController.deleteUser);
+  .delete(
+    authController.protect,
+    authController.restrictTo("admin"),
+    userController.deleteUser
+  );
 
 export default router;
