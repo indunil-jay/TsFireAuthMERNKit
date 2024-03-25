@@ -4,6 +4,7 @@ import { ObjectId } from "mongodb";
 import { promisify } from "util";
 import catchAsync from "../utils/catchAsync";
 import AppError from "../utils/appError";
+import sendEmail from "../utils/email";
 import User, { IUser, IUserDocument } from "../models/userModel";
 
 //Note
@@ -173,3 +174,51 @@ export const restrictTo = (...roles: string[]) => {
     next();
   };
 };
+
+export const forgotPassword = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    //get user based on posted email
+    const user = await User.findOne({ email: req.body.email });
+    if (!user)
+      return next(new AppError(`There is no user with email address.`, 404));
+
+    //generated the random token
+    const resetToken = user.createPasswordResetToken();
+    await user.save({ validateBeforeSave: false });
+
+    //send it to user's email
+    const resetURL = `${req.protocol}://${req.get(
+      "host"
+    )}/api/v1/users/resetPassword/${resetToken}`;
+
+    const message = `Forgot your password? submit a patch request with your new password and passwordConfir, to : ${resetURL}. \n If you didn't forgot password ignore this email.`;
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Your password reset Token (valid for 10 min)",
+        message,
+      });
+    } catch (error) {
+      user.passwordResetToken = undefined;
+      user.passwordResetExpire = undefined;
+      await user.save({ validateBeforeSave: false });
+
+      return next(
+        new AppError(
+          `There was and error sending the email. Try again later!`,
+          500
+        )
+      );
+    }
+    return res.status(200).json({
+      status: "success",
+      message: "Token sent tto the email.",
+    });
+  }
+);
+
+export const resetPassword = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {};

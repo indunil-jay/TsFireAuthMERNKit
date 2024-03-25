@@ -1,4 +1,5 @@
 import mongoose, { Document, Model } from "mongoose";
+import crypto from "crypto";
 import validator from "validator";
 import bcryptjs from "bcryptjs";
 
@@ -11,6 +12,8 @@ export interface IUser {
   passwordConfirm: string | undefined;
   photo?: string;
   passwordChangedAt?: Date;
+  passwordResetToken?: String;
+  passwordResetExpire?: Date | number;
 }
 
 //define user document shape
@@ -21,6 +24,8 @@ export interface IUserDocument extends Document, IUser {
   ): Promise<boolean>;
 
   changedPasswordAfter(JWTTimestamp: number): Promise<boolean>;
+
+  createPasswordResetToken(this: IUserDocument): Promise<string>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -70,6 +75,8 @@ const userSchema = new mongoose.Schema<IUserDocument, IUserModel>(
         "https://media.istockphoto.com/id/1495088043/vector/user-profile-icon-avatar-or-person-icon-profile-picture-portrait-symbol-default-portrait.jpg?s=1024x1024&w=is&k=20&c=oGqYHhfkz_ifeE6-dID6aM7bLz38C6vQTy1YcbgZfx8=",
     },
     passwordChangedAt: Date,
+    passwordResetToken: String,
+    passwordResetExpire: Date,
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
@@ -110,6 +117,19 @@ userSchema.methods.changedPasswordAfter = function (
 
   //false means not changed
   return false;
+};
+
+userSchema.methods.createPasswordResetToken = function (this: IUserDocument) {
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  this.passwordResetToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+
+  this.passwordResetExpire = Date.now() + 10 * 60 * 1000;
+
+  return resetToken;
 };
 
 const User: Model<IUserDocument> = mongoose.model<IUserDocument, IUserModel>(
