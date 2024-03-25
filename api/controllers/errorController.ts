@@ -1,6 +1,14 @@
 import { NextFunction, Request, Response } from "express";
 import AppError from "../utils/appError";
 import { CastError } from "mongoose";
+import { JsonWebTokenError } from "jsonwebtoken";
+
+const handleErrorJWT = () => {
+  return new AppError(`Invalid Token.Please Log in again!`, 401);
+};
+const handleExpiredErrorJWT = () => {
+  return new AppError(`Your Token has expired !.Please Log in again!`, 401);
+};
 
 const handleCastErrorDB = (err: CastError) => {
   const message = `Invalid ${err.path}: ${err.value}.`;
@@ -59,7 +67,9 @@ const globalErrorHandler = (
     if (
       err.name === "CastError" ||
       err.code === 11000 ||
-      err.name === "ValidationError"
+      err.name === "ValidationError" ||
+      err.name === "JsonWebTokenError" ||
+      err.name === "TokenExpiredError"
     ) {
       err.isOperational = true;
     }
@@ -83,6 +93,17 @@ const globalErrorHandler = (
     if (err.name === "ValidationError") {
       error = err;
       const handleError = handleValidationErrorDB(err);
+      return sendErrorProduction(handleError, res);
+    }
+
+    if (err.name === "JsonWebTokenError") {
+      error = err;
+      const handleError = handleErrorJWT();
+      return sendErrorProduction(handleError, res);
+    }
+    if (err.name === "TokenExpiredError") {
+      error = err;
+      const handleError = handleExpiredErrorJWT();
       return sendErrorProduction(handleError, res);
     }
   }

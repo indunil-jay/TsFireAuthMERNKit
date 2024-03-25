@@ -1,9 +1,10 @@
 import { Request, Response, NextFunction } from "express";
-import User, { IUser } from "../models/userModel";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
+import { ObjectId } from "mongodb";
+import { promisify } from "util";
 import catchAsync from "../utils/catchAsync";
 import AppError from "../utils/appError";
-import { ObjectId } from "mongodb";
+import User, { IUser } from "../models/userModel";
 
 const signToken = (id: ObjectId) =>
   jwt.sign({ id }, process.env.JWT_SECRET as string, {
@@ -74,13 +75,57 @@ export const singin = catchAsync(
     const token = signToken(user._id);
 
     // define cookie options
-    const cookieOptions = {
-      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      httpOnly: true,
-    };
-    // send via response, browser cookies
-    res.cookie("jwt", token, cookieOptions);
+    // const cookieOptions = {
+    //   expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    //   httpOnly: true,
+    // };
+    // // send via response, browser cookies
+    // res.cookie("jwt", token, cookieOptions);
 
     return res.status(200).json({ status: "success", token, user });
+  }
+);
+
+export const protect = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    //1) Getting the token and check it's there
+    let token: string | undefined;
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith("Bearer")
+    ) {
+      token = req.headers.authorization.split(" ")[1];
+    }
+    if (!token)
+      return next(
+        new AppError(
+          "Your are not logged in!. Please log in to get access",
+          401
+        )
+      );
+
+    //2) validate token (verfication)
+    // promisify jwt.verify
+    const verifyToken = (
+      token: string,
+      secret: string,
+      callback: jwt.VerifyCallback
+    ) => {
+      jwt.verify(token, secret, callback);
+    };
+    const verifyAsync = promisify(verifyToken);
+
+    try {
+      const decoded = await verifyAsync(
+        token,
+        process.env.JWT_SECRET as string
+      );
+    } catch (error) {
+      throw error;
+    }
+    //3)Check if user still exists
+
+    //4) check if user changed password after th jwt token was issured
+    next();
   }
 );
