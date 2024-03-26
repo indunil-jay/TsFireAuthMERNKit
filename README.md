@@ -20,3 +20,11 @@ NODE > 20.0 .ts file extenstion unknown issue fix.
 
 "start": "cross-env TSIMP_DIAG=error node --import=tsimp/import ./api/src/index.ts"
 "start": "cross-env TSIMP_DIAG=error nodemon --exec 'node --import=tsimp/import' ./api/src/index.ts"
+
+security practice
+//https only cookie
+
+//rate limit = npm i express-rate-limit
+
+//security http headers
+npm i helmet
