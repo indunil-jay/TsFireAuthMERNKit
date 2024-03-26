@@ -88,13 +88,7 @@ const userSchema = new mongoose.Schema<IUserDocument, IUserModel>(
 );
 
 userSchema.pre<Query<IUserDocument[], IUserDocument>>(/^find/, function (next) {
-  // If the query has already specified the 'active' field, do not modify it
-  if (this.getQuery().hasOwnProperty("active")) {
-    return next();
-  }
-
-  // Modify the query to filter documents with { active: true }
-  this.where({ active: { $ne: false } });
+  this.find({ active: { $ne: false } });
 
   next();
 });
