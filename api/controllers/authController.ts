@@ -15,10 +15,37 @@ declare module "express" {
   }
 }
 
-const signToken = (id: ObjectId) =>
+type CookieOptions = {
+  expires: Date;
+  httpOnly: boolean;
+  secure?: boolean;
+};
+
+const signToken = (id: ObjectId) => {
   jwt.sign({ id }, process.env.JWT_SECRET as string, {
     expiresIn: process.env.JWT_EXPIRE_TIME,
   });
+};
+
+const createSendToken = (
+  user: IUserDocument,
+  statusCode: number,
+  res: Response
+) => {
+  const token = signToken(user._id);
+  const cookieOptions: CookieOptions = {
+    //browser saved cookie life timme
+    expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    httpOnly: true,
+  };
+  if (process.env.NODE_ENV === "production") cookieOptions.secure = true;
+
+  // send via response, browser cookies
+  res.cookie("jwt", token, cookieOptions);
+  return res
+    .status(statusCode)
+    .json({ token, status: "success", data: { user } });
+};
 
 export const signup = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -55,19 +82,7 @@ export const signup = catchAsync(
     //   expiresIn: process.env.JWT_EXPIRE_TIME,
     // });
 
-    const token = signToken(user._id);
-
-    // define cookie options
-    const cookieOptions = {
-      expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      httpOnly: true,
-    };
-    // send via response, browser cookies
-    res.cookie("jwt", token, cookieOptions);
-
-    return res
-      .status(200)
-      .json({ token, status: "success", data: { user: userData } });
+    createSendToken(user, 200, res);
   }
 );
 
@@ -89,12 +104,11 @@ export const singin = catchAsync(
     }
 
     //3) if everythin is ok send token in to client
-    const token = signToken(user._id);
-
-    return res.status(200).json({ status: "success", token, user });
+    createSendToken(user, 200, res);
   }
 );
 
+//middleware
 export const protect = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     //1) Getting the token and check it's there
@@ -164,6 +178,7 @@ export const protect = catchAsync(
   }
 );
 
+//middleware
 export const restrictTo = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     console.log("Role", req.user?.role);
@@ -243,8 +258,7 @@ export const resetPassword = catchAsync(
     //3) Update changePasswordAt property for user  (mongoose middleware)
 
     //4) Log the user in, and set JWT tokenn
-    const token = signToken(user._id);
-    res.status(200).json({ status: "success", token });
+    createSendToken(user, 200, res);
   }
 );
 
@@ -270,9 +284,7 @@ export const updatePassword = catchAsync(
       await user.save();
 
       //4 log user in, send jwt
-      const token = signToken(user._id);
-
-      return res.status(200).json({ status: "success", token, data: { user } });
+      createSendToken(user, 200, res);
     }
   }
 );

@@ -1,9 +1,4 @@
-import express, {
-  ErrorRequestHandler,
-  NextFunction,
-  Request,
-  Response,
-} from "express";
+import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import morgon from "morgan";
 import userRouter from "../routes/userRouter";
@@ -19,6 +14,8 @@ if ((process.env.NODE_ENV as string) === "development") {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(cors());
+
+//security best practices
 
 app.use("/api/v1/users", userRouter);
 
