@@ -2,6 +2,7 @@ import mongoose, { Document, Model } from "mongoose";
 import crypto from "crypto";
 import validator from "validator";
 import bcryptjs from "bcryptjs";
+import { NextFunction } from "express";
 
 //define user shape
 export interface IUser {
@@ -11,7 +12,7 @@ export interface IUser {
   password: string;
   passwordConfirm: string | undefined;
   photo?: string;
-  passwordChangedAt?: Date;
+  passwordChangedAt?: Date | number;
   passwordResetToken?: String;
   passwordResetExpire?: Date | number;
 }
@@ -82,15 +83,21 @@ const userSchema = new mongoose.Schema<IUserDocument, IUserModel>(
 );
 
 userSchema.pre("save", async function (this: IUserDocument, next) {
-  //if the passowrd  is has not been modify;
-  if (!this.isModified("password")) return next();
+  // Encrypt the password when creating a new user or modifying the password
+  if (this.isModified("password")) {
+    this.password = await bcryptjs.hash(this.password, 12);
 
-  //encryptpassword when create new user
-  this.password = await bcryptjs.hash(this.password, 12);
+    //delete confirm  password, it is not necessary for save
+    this.passwordConfirm = undefined;
+  }
 
-  //delete confirm  password, it is not necessary for save
-  this.passwordConfirm = undefined;
-
+  // Update passwordChangedAt only when resetting the password
+  if (
+    this.isModified("passwordResetToken") &&
+    this.isModified("passwordResetExpire")
+  ) {
+    this.passwordChangedAt = new Date();
+  }
   next();
 });
 

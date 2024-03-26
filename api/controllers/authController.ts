@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt, { Jwt, JwtPayload } from "jsonwebtoken";
 import { ObjectId } from "mongodb";
 import { promisify } from "util";
+import crypto from "crypto";
 import catchAsync from "../utils/catchAsync";
 import AppError from "../utils/appError";
 import sendEmail from "../utils/email";
@@ -217,8 +218,32 @@ export const forgotPassword = catchAsync(
   }
 );
 
-export const resetPassword = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {};
+export const resetPassword = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    //1) get user based one the reset token
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(req.params.token)
+      .digest("hex");
+
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpire: { $gt: Date.now() },
+    });
+
+    if (!user) return next(new AppError("Token is invalid or expired", 400));
+    //2) if token has not expired , and there is user , set new password.
+
+    user.password = req.body.password;
+    user.passwordConfirm = req.body.passwordConfirm;
+    user.passwordResetExpire = undefined;
+    user.passwordResetToken = undefined;
+    await user.save();
+
+    //3) Update changePasswordAt property for user  (mongoose middleware)
+
+    //4) Log the user in, and set JWT tokenn
+    const token = signToken(user._id);
+    res.status(200).json({ status: "success", token });
+  }
+);
