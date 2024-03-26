@@ -42,9 +42,13 @@ const createSendToken = (
 
   // send via response, browser cookies
   res.cookie("jwt", token, cookieOptions);
+
+  //remove passowrd when sending response
+  const { password, ...userDetails } = user.toObject();
+
   return res
     .status(statusCode)
-    .json({ token, status: "success", data: { user } });
+    .json({ token, status: "success", data: { userDetails } });
 };
 
 export const signup = catchAsync(
@@ -75,13 +79,14 @@ export const signup = catchAsync(
     });
 
     //3) remove password from output when sending response
-    const { password: userPassword, ...userData } = user.toObject();
+    //const { password: userPassword, ...userData } = user.toObject();
 
     //4)create jwt token successfully created user.
     // const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET as string, {
     //   expiresIn: process.env.JWT_EXPIRE_TIME,
     // });
 
+    //3) //4)
     createSendToken(user, 200, res);
   }
 );
