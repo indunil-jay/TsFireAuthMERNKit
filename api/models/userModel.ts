@@ -1,8 +1,7 @@
-import mongoose, { Document, Model } from "mongoose";
+import mongoose, { Document, Model, Query } from "mongoose";
 import crypto from "crypto";
 import validator from "validator";
 import bcryptjs from "bcryptjs";
-import { NextFunction } from "express";
 
 //define user shape
 export interface IUser {
@@ -87,6 +86,18 @@ const userSchema = new mongoose.Schema<IUserDocument, IUserModel>(
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
+
+userSchema.pre<Query<IUserDocument[], IUserDocument>>(/^find/, function (next) {
+  // If the query has already specified the 'active' field, do not modify it
+  if (this.getQuery().hasOwnProperty("active")) {
+    return next();
+  }
+
+  // Modify the query to filter documents with { active: true }
+  this.where({ active: { $ne: false } });
+
+  next();
+});
 
 userSchema.pre("save", async function (this: IUserDocument, next) {
   // Encrypt the password when creating a new user or modifying the password
