@@ -84,20 +84,23 @@ const userSchema = new mongoose.Schema<IUserDocument, IUserModel>(
 
 userSchema.pre("save", async function (this: IUserDocument, next) {
   // Encrypt the password when creating a new user or modifying the password
-  if (this.isModified("password")) {
-    this.password = await bcryptjs.hash(this.password, 12);
+  if (!this.isModified("password")) return next();
 
-    //delete confirm  password, it is not necessary for save
-    this.passwordConfirm = undefined;
-  }
+  //if not
+  //encrypt passowrd when creation of user
+  this.password = await bcryptjs.hash(this.password, 12);
 
-  // Update passwordChangedAt only when resetting the password
-  if (
-    this.isModified("passwordResetToken") &&
-    this.isModified("passwordResetExpire")
-  ) {
-    this.passwordChangedAt = new Date();
-  }
+  //delete confirm password its is not necessary for save
+  this.passwordConfirm = undefined;
+  next();
+
+  next();
+});
+
+userSchema.pre("save", function (this: IUserDocument, next) {
+  if (!this.isModified("password") || this.isNew) return next();
+
+  this.passwordChangedAt = Date.now() - 1000;
   next();
 });
 
@@ -118,7 +121,7 @@ userSchema.methods.changedPasswordAfter = function (
     const changedTimeStamp = Math.trunc(
       (this.passwordChangedAt as Date).getTime() / 1000
     );
-    console.log(JWTTimestamp, changedTimeStamp);
+    // console.log(JWTTimestamp, changedTimeStamp);
     return JWTTimestamp < changedTimeStamp; //100 <200 true
   }
 

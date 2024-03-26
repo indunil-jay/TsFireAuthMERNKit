@@ -153,7 +153,7 @@ export const protect = catchAsync(
       const isChanged = await currentUser.changedPasswordAfter(
         decoded.iat as number
       );
-      console.log(isChanged);
+
       if (isChanged) {
         return next(new AppError("User recently changed password.", 401));
       }
@@ -245,5 +245,34 @@ export const resetPassword = catchAsync(
     //4) Log the user in, and set JWT tokenn
     const token = signToken(user._id);
     res.status(200).json({ status: "success", token });
+  }
+);
+
+export const updatePassword = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    //1 get the user from collection
+    const user = await User.findById(req.user?.id).select("+password");
+
+    if (user) {
+      //2 check if posted password is correct
+      const isCorrect = await user.correctPassword(
+        req.body.passwordCurrent,
+        user.password
+      );
+
+      if (!isCorrect)
+        return next(new AppError(`Given password is wrong!.`, 401));
+
+      console.log(req.body.password, req.body.passwordConfirm);
+      //3 If so update password
+      user.password = req.body.password;
+      user.passwordConfirm = req.body.passwordConfirm;
+      await user.save();
+
+      //4 log user in, send jwt
+      const token = signToken(user._id);
+
+      return res.status(200).json({ status: "success", token, data: { user } });
+    }
   }
 );
