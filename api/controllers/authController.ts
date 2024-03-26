@@ -21,11 +21,10 @@ type CookieOptions = {
   secure?: boolean;
 };
 
-const signToken = (id: ObjectId) => {
+const signToken = (id: ObjectId) =>
   jwt.sign({ id }, process.env.JWT_SECRET as string, {
     expiresIn: process.env.JWT_EXPIRE_TIME,
   });
-};
 
 const createSendToken = (
   user: IUserDocument,
@@ -282,7 +281,6 @@ export const updatePassword = catchAsync(
       if (!isCorrect)
         return next(new AppError(`Given password is wrong!.`, 401));
 
-      console.log(req.body.password, req.body.passwordConfirm);
       //3 If so update password
       user.password = req.body.password;
       user.passwordConfirm = req.body.passwordConfirm;
