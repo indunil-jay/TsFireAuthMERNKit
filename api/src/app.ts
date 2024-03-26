@@ -1,12 +1,14 @@
+import path from "path";
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import morgon from "morgan";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
+import ExpressMongoSanitize from "express-mongo-sanitize";
+import hpp from "hpp";
 import userRouter from "../routes/userRouter";
 import AppError from "../utils/appError";
 import globalErrorHandler from "../controllers/errorController";
-import path from "path";
 
 const app = express();
 
@@ -34,6 +36,25 @@ const limiter = rateLimit({
   message: "Too many requests from this IP, please try again in an hour!.",
 });
 app.use("/api", limiter);
+
+// data sanitization againts no sql query injection (remove mongo operators)
+app.use(ExpressMongoSanitize());
+
+//xss sanitization
+
+//prevent parameter pollution
+app.use(
+  hpp({
+    whitelist: [
+      "duration",
+      "ratingsAverage",
+      "ratingsQuantity",
+      "maxGroupSize",
+      "difficulty",
+      "price",
+    ],
+  })
+);
 
 //Routes
 app.use("/api/v1/users", userRouter);
