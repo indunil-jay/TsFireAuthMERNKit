@@ -11,10 +11,11 @@ export interface IUser {
   role: string;
   password: string;
   passwordConfirm: string | undefined;
-  photo?: string;
+  photo: string;
   passwordChangedAt?: Date | number;
   passwordResetToken?: String;
   passwordResetExpire?: Date | number;
+  active?: Boolean;
 }
 
 //define user document shape
@@ -78,6 +79,11 @@ const userSchema = new mongoose.Schema<IUserDocument, IUserModel>(
     passwordChangedAt: Date,
     passwordResetToken: String,
     passwordResetExpire: Date,
+    active: {
+      type: Boolean,
+      default: true,
+      select: false,
+    },
   },
   { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
 );
@@ -92,8 +98,6 @@ userSchema.pre("save", async function (this: IUserDocument, next) {
 
   //delete confirm password its is not necessary for save
   this.passwordConfirm = undefined;
-  next();
-
   next();
 });
 
