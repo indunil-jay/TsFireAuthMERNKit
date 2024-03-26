@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import User from "../models/userModel";
 import catchAsync from "../utils/catchAsync";
 import AppError from "../utils/appError";
+import validator from "validator";
 
 export const getAllUsers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -75,5 +76,48 @@ export const createUser = catchAsync(
         data: user,
       },
     });
+  }
+);
+
+type RequestBody = { [key: string]: string };
+const filterObj = (obj: RequestBody, ...allowedFields: string[]) => {
+  const newObj: any = {};
+  Object.keys(obj).forEach((el) => {
+    if (allowedFields.includes(el)) {
+      newObj[el] = obj[el];
+    } else {
+      throw new AppError(
+        `Operation not allowed. Field '${el}' is not allowed to be modified.`,
+        401
+      );
+    }
+  });
+
+  return newObj;
+};
+
+export const updateMe = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    //1) Create error if user pass password data
+    if (req.body.password || req.body.passwordConfirm) {
+      return next(
+        new AppError(
+          `This route is not passwords updates. Please use /updateMyPassword`,
+          400
+        )
+      );
+    }
+    //2 Update user document
+    //filter body
+
+    // Use RequestBody type for req.body
+    const filteredBody = filterObj(req.body as RequestBody, "name", "email");
+
+    const user = await User.findByIdAndUpdate(req.user?.id, filteredBody, {
+      new: true,
+      runValidators: true,
+    });
+
+    res.status(200).json({ status: "success", user });
   }
 );
