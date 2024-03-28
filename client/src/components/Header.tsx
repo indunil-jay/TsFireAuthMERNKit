@@ -17,9 +17,9 @@ export default function Header() {
             {" "}
             <li>About</li>
           </Link>
-          <Link to="/sign-in">
+          <Link to="/sign-up">
             {" "}
-            <li>Sign In</li>
+            <li>Sign up</li>
           </Link>
         </ul>
       </div>
